@@ -19,7 +19,19 @@ export default function Calma() {
   const ondasRef = useRef<{x: number; y: number; r: number; maxR: number; hue: number}[]>([]);
   const timeRef = useRef(0);
   const [sonido, setSonido] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
+  const [installed, setInstalled] = useState(false);
   const audioRef = useRef<AudioContext | null>(null);
+
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
+    const handler = (e: any) => { e.preventDefault(); setInstallPrompt(e); };
+    window.addEventListener("beforeinstallprompt", handler);
+    if (window.matchMedia("(display-mode: standalone)").matches) setInstalled(true);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
 
   useEffect(() => { mundoRef.current = mundo; }, [mundo]);
 
@@ -317,6 +329,15 @@ export default function Calma() {
         ))}
       </div>
 
+      {/* Install PWA */}
+      {installPrompt && !installed && (
+        <button
+          onClick={() => { installPrompt.prompt(); installPrompt.userChoice.then(() => { setInstallPrompt(null); setInstalled(true); }); }}
+          className="absolute top-4 right-16 z-10 px-3 py-2 rounded-full bg-white/20 backdrop-blur-sm text-white/70 text-xs font-medium hover:bg-white/30 transition-all"
+        >
+          Instalar
+        </button>
+      )}
       {/* Sonido toggle - discreto */}
       <button
         onClick={() => setSonido(!sonido)}
